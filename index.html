@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facial Recognition Attendance System</title>
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Facial Recognition Attendance System</h1>
+            <div class="status" id="status">Loading models...</div>
+        </header>
+
+        <main>
+            <div class="video-section">
+                <div class="video-container">
+                    <video id="video" autoplay muted></video>
+                    <canvas id="overlay"></canvas>
+                </div>
+                <div class="controls">
+                    <button id="startCamera" class="btn btn-primary">Start Camera</button>
+                    <button id="stopCamera" class="btn btn-secondary" disabled>Stop Camera</button>
+                    <button id="markAttendance" class="btn btn-success" disabled>Mark Attendance</button>
+                </div>
+            </div>
+
+            <div class="registration-section">
+                <h2>Register New Person</h2>
+                <div class="register-form">
+                    <input type="text" id="personName" placeholder="Enter person's name" />
+                    <button id="registerPerson" class="btn btn-info" disabled>Register Face</button>
+                </div>
+            </div>
+
+            <div class="attendance-section">
+                <h2>Today's Attendance</h2>
+                <div class="attendance-list" id="attendanceList">
+                    <p>No attendance records for today.</p>
+                </div>
+                <button id="clearAttendance" class="btn btn-danger">Clear Today's Records</button>
+            </div>
+
+            <div class="registered-faces">
+                <h2>Registered Faces</h2>
+                <div class="faces-grid" id="facesGrid">
+                    <p>No faces registered yet.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
