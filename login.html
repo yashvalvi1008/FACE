@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facial Recognition Attendance - Authentication</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #0f0f23;
+            --secondary-dark: #1a1a2e;
+            --tertiary-dark: #16213e;
+            --accent-purple: #7c3aed;
+            --accent-cyan: #06b6d4;
+            --accent-pink: #ec4899;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --surface-light: rgba(255, 255, 255, 0.05);
+            --surface-medium: rgba(255, 255, 255, 0.1);
+            --surface-high: rgba(255, 255, 255, 0.15);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 50%, var(--tertiary-dark) 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(120, 58, 237, 0.3) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.3) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 40%, rgba(236, 72, 153, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .auth-card {
+            background: var(--surface-medium);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--surface-light);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: var(--shadow-xl);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .student-card::before {
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+        }
+
+        .admin-card::before {
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-red));
+        }
+
+        .register-card::before {
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-pink));
+        }
+
+        .auth-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl), 0 0 40px rgba(124, 58, 237, 0.2);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .auth-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            background: var(--surface-light);
+            border: 2px solid var(--surface-medium);
+        }
+
+        .student-card .auth-icon {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+        }
+
+        .admin-card .auth-icon {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
+        }
+
+        .register-card .auth-icon {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-pink));
+        }
+
+        .auth-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .admin-card .auth-title {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .register-card .auth-title {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .auth-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid var(--surface-light);
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+            background: var(--surface-light);
+            backdrop-filter: blur(10px);
+            color: var(--text-primary);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+            background: var(--surface-medium);
+        }
+
+        .admin-card .form-input:focus {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+        }
+
+        .register-card .form-input:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-student {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: white;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn-student:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.6);
+        }
+
+        .btn-admin {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-admin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.6);
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-pink));
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.6);
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .forgot-password a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password a:hover {
+            color: var(--accent-purple);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+            text-align: center;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--surface-light);
+        }
+
+        .divider span {
+            margin: 0 16px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .social-login {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .social-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--surface-light);
+            border-radius: 12px;
+            background: var(--surface-light);
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .social-btn:hover {
+            background: var(--surface-medium);
+            border-color: var(--accent-purple);
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--accent-green);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .back-to-app {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--surface-medium);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--surface-light);
+            border-radius: 12px;
+            padding: 12px 20px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .back-to-app:hover {
+            background: var(--surface-high);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .auth-container {
+                grid-template-columns: 1fr;
+                max-width: 500px;
+                gap: 32px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .auth-container {
+                padding: 0 16px;
+            }
+            
+            .auth-card {
+                padding: 24px;
+            }
+            
+            .auth-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .auth-card {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .auth-card:nth-child(1) { animation-delay: 0.1s; }
+        .auth-card:nth-child(2) { animation-delay: 0.2s; }
+        .auth-card:nth-child(3) { animation-delay: 0.3s; }
+
+        /* Loading animation */
+        .loading {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--surface-light);
+            border-top: 2px solid var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn.loading {
+            pointer-events: none;
+        }
+
+        .btn.loading .loading {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <a href="#" class="back-to-app" onclick="goToMainApp()">← Back to Attendance System</a>
+    
+    <div class="auth-container">
+        <!-- Student Login Card -->
+        <div class="auth-card student-card">
+            <div class="auth-header">
+                <div class="auth-icon">👨‍🎓</div>
+                <h2 class="auth-title">Student Login</h2>
+                <p class="auth-subtitle">Access your attendance records</p>
+            </div>
+            
+            <div class="error-message" id="studentError"></div>
+            <div class="success-message" id="studentSuccess"></div>
+            
+            <form id="studentLoginForm">
+                <div class="form-group">
+                    <label class="form-label">Student ID</label>
+                    <input type="text" class="form-input" placeholder="Enter your student ID" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-student">
+                    <span class="loading"></span>
+                    Login as Student
+                </button>
+            </form>
+            
+            <div class="forgot-password">
+                <a href="#" onclick="forgotPassword('student')">Forgot Password?</a>
+            </div>
+            
+            <div class="divider">
+                <span>or</span>
+            </div>
+            
+            <div class="social-login">
+                <a href="#" class="social-btn" onclick="socialLogin('google', 'student')">
+                    📧 Google
+                </a>
+                <a href="#" class="social-btn" onclick="socialLogin('microsoft', 'student')">
+                    🏢 Microsoft
+                </a>
+            </div>
+        </div>
+        
+        <!-- Admin Login Card -->
+        <div class="auth-card admin-card">
+            <div class="auth-header">
+                <div class="auth-icon">👨‍💼</div>
+                <h2 class="auth-title">Admin Login</h2>
+                <p class="auth-subtitle">Manage attendance system</p>
+            </div>
+            
+            <div class="error-message" id="adminError"></div>
+            <div class="success-message" id="adminSuccess"></div>
+            
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label class="form-label">Admin Email</label>
+                    <input type="email" class="form-input" placeholder="Enter admin email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" placeholder="Enter admin password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Access Level</label>
+                    <select class="form-input form-select" required>
+                        <option value="">Select access level</option>
+                        <option value="super">Super Admin</option>
+                        <option value="department">Department Admin</option>
+                        <option value="teacher">Teacher</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-admin">
+                    <span class="loading"></span>
+                    Login as Admin
+                </button>
+            </form>
+            
+            <div class="forgot-password">
+                <a href="#" onclick="forgotPassword('admin')">Forgot Password?</a>
+            </div>
+            
+            <div class="divider">
+                <span>or</span>
+            </div>
+            
+            <div class="social-login">
+                <a href="#" class="social-btn" onclick="socialLogin('google', 'admin')">
+                    📧 Google
+                </a>
+                <a href="#" class="social-btn" onclick="socialLogin('azure', 'admin')">
+                    ☁️ Azure AD
+                </a>
+            </div>
+        </div>
+        
+        <!-- Registration Card -->
+        <div class="auth-card register-card">
+            <div class="auth-header">
+                <div class="auth-icon">📝</div>
+                <h2 class="auth-title">Register</h2>
+                <p class="auth-subtitle">Create a new account</p>
+            </div>
+            
+            <div class="error-message" id="registerError"></div>
+            <div class="success-message" id="registerSuccess"></div>
+            
+            <form id="registerForm">
+                <div class="form-group">
+                    <label class="form-label">Account Type</label>
+                    <select class="form-input form-select" id="accountType" required onchange="toggleRegistrationFields()">
+                        <option value="">Select account type</option>
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-input" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group student-field" style="display: none;">
+                    <label class="form-label">Student ID</label>
+                    <input type="text" class="form-input" placeholder="Enter your student ID">
+                </div>
+                
+                <div class="form-group student-field" style="display: none;">
+                    <label class="form-label">Department</label>
+                    <select class="form-input form-select">
+                        <option value="">Select department</option>
+                        <option value="computer-science">Computer Science</option>
+                        <option value="electrical">Electrical Engineering</option>
+                        <option value="mechanical">Mechanical Engineering</option>
+                        <option value="civil">Civil Engineering</option>
+                        <option value="business">Business Administration</option>
+                        <option value="mathematics">Mathematics</option>
+                        <option value="physics">Physics</option>
+                        <option value="chemistry">Chemistry</option>
+                    </select>
+                </div>
+                
+                <div class="form-group admin-field" style="display: none;">
+                    <label class="form-label">Admin Code</label>
+                    <input type="text" class="form-input" placeholder="Enter admin registration code">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" placeholder="Create a password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-input" placeholder="Confirm your password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-register">
+                    <span class="loading"></span>
+                    Create Account
+                </button>
+            </form>
+            
+            <div class="divider">
+                <span>or</span>
+            </div>
+            
+            <div class="social-login">
+                <a href="#" class="social-btn" onclick="socialLogin('google', 'register')">
+                    📧 Google
+                </a>
+                <a href="#" class="social-btn" onclick="socialLogin('microsoft', 'register')">
+                    🏢 Microsoft
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Authentication state management
+        class AuthSystem {
+            constructor() {
+                this.users = JSON.parse(localStorage.getItem('users')) || [];
+                this.currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                document.getElementById('studentLoginForm').addEventListener('submit', (e) => this.handleLogin(e, 'student'));
+                document.getElementById('adminLoginForm').addEventListener('submit', (e) => this.handleLogin(e, 'admin'));
+                document.getElementById('registerForm').addEventListener('submit', (e) => this.handleRegistration(e));
+            }
+
+            async handleLogin(event, userType) {
+                event.preventDefault();
+                const form = event.target;
+                const formData = new FormData(form);
+                const button = form.querySelector('.btn');
+                
+                this.showLoading(button);
+                
+                // Simulate API call
+                await this.delay(1500);
+                
+                try {
+                    const credentials = this.extractFormData(form);
+                    const user = this.authenticateUser(credentials, userType);
+                    
+                    if (user) {
+                        this.setCurrentUser(user);
+                        this.showSuccess(`${userType}Success`, `Welcome back, ${user.name}!`);
+                        
+                        // Redirect after success
+                        setTimeout(() => {
+                            this.redirectToMainApp(userType);
+                        }, 1500);
+                    } else {
+                        this.showError(`${userType}Error`, 'Invalid credentials. Please try again.');
+                    }
+                } catch (error) {
+                    this.showError(`${userType}Error`, 'Login failed. Please try again.');
+                } finally {
+                    this.hideLoading(button);
+                }
+            }
+
+            async handleRegistration(event) {
+                event.preventDefault();
+                const form = event.target;
+                const button = form.querySelector('.btn');
+                
+                this.showLoading(button);
+                
+                await this.delay(2000);
+                
+                try {
+                    const userData = this.extractFormData(form);
+                    
+                    if (this.validateRegistration(userData)) {
+                        this.createUser(userData);
+                        this.showSuccess('registerSuccess', 'Account created successfully! You can now login.');
+                        form.reset();
+                        document.getElementById('accountType').dispatchEvent(new Event('change'));
+                    }
+                } catch (error) {
+                    this.showError('registerError', error.message);
+                } finally {
+                    this.hideLoading(button);
+                }
+            }
+
+            extractFormData(form) {
+                const formData = new FormData(form);
+                const data = {};
+                for (let [key, value] of formData.entries()) {
+                    data[key] = value;
+                }
+                
+                // Get values from inputs manually for better control
+                const inputs = form.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    if (input.name || input.id) {
+                        const key = input.name || input.id;
+                        data[key] = input.value;
+                    }
+                });
+                
+                return data;
+            }
+
+            authenticateUser(credentials, userType) {
+                // Demo users for testing
+                const demoUsers = {
+                    student: {
+                        id: 'student123',
+                        password: 'password',
+                        name: 'John Doe',
+                        type: 'student',
+                        department: 'Computer Science'
+                    },
+                    admin: {
+                        email: 'admin@school.edu',
+                        password: 'admin123',
+                        name: 'Dr. Jane Smith',
+                        type: 'admin',
+                        accessLevel: 'super'
+                    }
+                };
+
+                if (userType === 'student') {
+                    const input1 = document.querySelector('#studentLoginForm input[type="text"]').value;
+                    const input2 = document.querySelector('#studentLoginForm input[type="password"]').value;
+                    
+                    if (input1 === demoUsers.student.id && input2 === demoUsers.student.password) {
+                        return demoUsers.student;
+                    }
+                } else if (userType === 'admin') {
+                    const input1 = document.querySelector('#adminLoginForm input[type="email"]').value;
+                    const input2 = document.querySelector('#adminLoginForm input[type="password"]').value;
+                    
+                    if (input1 === demoUsers.admin.email && input2 === demoUsers.admin.password) {
+                        return demoUsers.admin;
+                    }
+                }
+
+                // Check registered users
+                return this.users.find(user => {
+                    if (userType === 'student') {
+                        return user.studentId === credentials.studentId && user.password === credentials.password;
+                    } else {
+                        return user.email === credentials.email && user.password === credentials.password;
+                    }
+                });
+            }
+
+            validateRegistration(data) {
+                const email = document.querySelector('#registerForm input[type="email"]').value;
+                const password = document.querySelector('#registerForm input[type="password"]').value;
+                const confirmPassword = document.querySelectorAll('#registerForm input[type="password"]')[1].value;
+                const accountType = document.getElementById('accountType').value;
+                const fullName = document.querySelector('#registerForm input[type="text"]').value;
+
+                if (!accountType) {
+                    throw new Error('Please select an account type.');
+                }
+
+                if (!fullName.trim()) {
+                    throw new Error('Please enter your full name.');
+                }
+
+                if (!email || !this.isValidEmail(email)) {
+                    throw new Error('Please enter a valid email address.');
+                }
+
+                if (password.length < 6) {
+                    throw new Error('Password must be at least 6 characters long.');
+                }
+
+                if (password !== confirmPassword) {
+                    throw new Error('Passwords do not match.');
+                }
+
+                // Check if user already exists
+                const existingUser = this.users.find(user => user.email === email);
+                if (existingUser) {
+                    throw new Error('An account with this email already exists.');
+                }
+
+                return true;
+            }
+
+            createUser(data) {
+                const newUser = {
+                    id: Date.now(),
+                    name: document.querySelector('#registerForm input[type="text"]').value,
+                    email: document.querySelector('#registerForm input[type="email"]').value,
+                    password: document.querySelector('#registerForm input[type="password"]').value,
+                    type: document.getElementById('accountType').value,
+                    createdAt: new Date().toISOString()
+                };
+
+                // Add type-specific fields
+                if (newUser.type === 'student') {
+                    newUser.studentId = document.querySelector('.student-field input[type="text"]').value;
+                    newUser.department = document.querySelector('.student-field select').value;
+                }
+
+                this.users.push(newUser);
+                localStorage.setItem('users', JSON.stringify(this.users));
+            }
+
+            setCurrentUser(user) {
+                this.currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(user));
+            }
+
+            isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+
+            showLoading(button) {
+                button.classList.add('loading');
+                button.disabled = true;
+            }
+
+            hideLoading(button) {
+                button.classList.remove('loading');
+                button.disabled = false;
+            }
+
+            showError(elementId, message) {
+                const errorElement = document.getElementById(elementId);
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+                
+                // Hide success message if visible
+                const successElement = document.getElementById(elementId.replace('Error', 'Success'));
+                if (successElement) {
+                    successElement.style.display = 'none';
+                }
+
+                // Auto hide after 5 seconds
+                setTimeout(() => {
+                    errorElement.style.display = 'none';
+                }, 5000);
+            }
+
+            showSuccess(elementId, message) {
+                const successElement = document.getElementById(elementId);
+                successElement.textContent = message;
+                successElement.style.display = 'block';
+                
+                // Hide error message if visible
+                const errorElement = document.getElementById(elementId.replace('Success', 'Error'));
+                if (errorElement) {
+                    errorElement.style.display = 'none';
+                }
+
+                // Auto hide after 3 seconds
+                setTimeout(() => {
+                    successElement.style.display = 'none';
+                }, 3000);
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            redirectToMainApp(userType) {
+                // Store user session
+                sessionStorage.setItem('userLoggedIn', 'true');
+                sessionStorage.setItem('userType', userType);
+                
+                // In a real app, you would redirect to the main application
+                alert(`Redirecting to ${userType} dashboard...`);
+                // window.location.href = userType === 'admin' ? '/admin-dashboard.html' : '/student-dashboard.html';
+            }
+        }
+
+        // Utility functions
+        function toggleRegistrationFields() {
+            const accountType = document.getElementById('accountType').value;
+            const studentFields = document.querySelectorAll('.student-field');
+            const adminFields = document.querySelectorAll('.admin-field');
+
+            // Hide all conditional fields
+            studentFields.forEach(field => field.style.display = 'none');
+            adminFields.forEach(field => field.style.display = 'none');
+
+            // Show relevant fields
+            if (accountType === 'student') {
+                studentFields.forEach(field => field.style.display = 'block');
+            } else if (accountType === 'admin') {
+                adminFields.forEach(field => field.style.display = 'block');
+            }
+        }
+
+        function forgotPassword(userType) {
+            const email = prompt(`Please enter your ${userType === 'student' ? 'student email' : 'admin email'}:`);
+            
+            if (email) {
+                // Simulate password reset
+                setTimeout(() => {
+                    alert(`Password reset instructions have been sent to ${email}`);
+                }, 1000);
+            }
+        }
+
+        function socialLogin(provider, context) {
+            // Simulate social login
+            const providerNames = {
+                google: 'Google',
+                microsoft: 'Microsoft',
+                azure: 'Azure AD'
+            };
+
+            alert(`Redirecting to ${providerNames[provider]} login...`);
+            
+            // In a real app, this would redirect to OAuth provider
+            setTimeout(() => {
+                alert(`${providerNames[provider]} login completed successfully!`);
+            }, 2000);
+        }
+
+        function goToMainApp() {
+            // In a real app, this would navigate to the main attendance system
+            alert('Returning to main attendance system...');
+            // window.location.href = '/index.html';
+        }
+
+        // Demo data population
+        function populateDemoData() {
+            // Add some demo users if none exist
+            const existingUsers = JSON.parse(localStorage.getItem('users')) || [];
+            
+            if (existingUsers.length === 0) {
+                const demoUsers = [
+                    {
+                        id: 1,
+                        name: 'Alice Johnson',
+                        email: 'alice@student.edu',
+                        password: 'student123',
+                        type: 'student',
+                        studentId: 'STU001',
+                        department: 'Computer Science',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: 2,
+                        name: 'Prof. Bob Wilson',
+                        email: 'bob.wilson@school.edu',
+                        password: 'teacher123',
+                        type: 'teacher',
+                        department: 'Mathematics',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: 3,
+                        name: 'Dr. Carol Admin',
+                        email: 'carol@admin.edu',
+                        password: 'admin123',
+                        type: 'admin',
+                        accessLevel: 'super',
+                        createdAt: new Date().toISOString()
+                    }
+                ];
+
+                localStorage.setItem('users', JSON.stringify(demoUsers));
+            }
+        }
+
+        // Enhanced form validation
+        function setupFormValidation() {
+            const forms = document.querySelectorAll('form');
+            
+            forms.forEach(form => {
+                const inputs = form.querySelectorAll('input, select');
+                
+                inputs.forEach(input => {
+                    input.addEventListener('blur', validateField);
+                    input.addEventListener('input', clearFieldError);
+                });
+            });
+        }
+
+        function validateField(event) {
+            const field = event.target;
+            const value = field.value.trim();
+            
+            // Remove existing error styling
+            field.style.borderColor = '';
+            
+            // Email validation
+            if (field.type === 'email' && value) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    field.style.borderColor = '#ef4444';
+                    showFieldError(field, 'Please enter a valid email address');
+                    return false;
+                }
+            }
+            
+            // Password strength validation
+            if (field.type === 'password' && value) {
+                if (value.length < 6) {
+                    field.style.borderColor = '#ef4444';
+                    showFieldError(field, 'Password must be at least 6 characters');
+                    return false;
+                }
+            }
+            
+            // Student ID format validation
+            if (field.placeholder && field.placeholder.includes('student ID') && value) {
+                const studentIdRegex = /^[A-Z]{2,3}\d{3,6}$/i;
+                if (!studentIdRegex.test(value)) {
+                    field.style.borderColor = '#ef4444';
+                    showFieldError(field, 'Student ID format: ABC123 or ABCD1234');
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        function clearFieldError(event) {
+            const field = event.target;
+            field.style.borderColor = '';
+            hideFieldError(field);
+        }
+
+        function showFieldError(field, message) {
+            let errorDiv = field.parentNode.querySelector('.field-error');
+            
+            if (!errorDiv) {
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'field-error';
+                errorDiv.style.cssText = `
+                    color: #fca5a5;
+                    font-size: 0.8rem;
+                    margin-top: 4px;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                `;
+                field.parentNode.appendChild(errorDiv);
+            }
+            
+            errorDiv.textContent = message;
+            setTimeout(() => errorDiv.style.opacity = '1', 10);
+        }
+
+        function hideFieldError(field) {
+            const errorDiv = field.parentNode.querySelector('.field-error');
+            if (errorDiv) {
+                errorDiv.style.opacity = '0';
+                setTimeout(() => errorDiv.remove(), 300);
+            }
+        }
+
+        // Accessibility enhancements
+        function setupAccessibility() {
+            // Add ARIA labels and roles
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.setAttribute('role', 'form');
+                form.setAttribute('novalidate', 'true'); // Use custom validation
+            });
+
+            // Add keyboard navigation for social buttons
+            const socialBtns = document.querySelectorAll('.social-btn');
+            socialBtns.forEach(btn => {
+                btn.setAttribute('role', 'button');
+                btn.setAttribute('tabindex', '0');
+                
+                btn.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click();
+                    }
+                });
+            });
+
+            // Add focus trap for forms
+            setupFocusTrap();
+        }
+
+        function setupFocusTrap() {
+            const cards = document.querySelectorAll('.auth-card');
+            
+            cards.forEach(card => {
+                const focusableElements = card.querySelectorAll(
+                    'input, button, select, a, [tabindex]:not([tabindex="-1"])'
+                );
+                
+                if (focusableElements.length > 0) {
+                    const firstElement = focusableElements[0];
+                    const lastElement = focusableElements[focusableElements.length - 1];
+                    
+                    card.addEventListener('keydown', function(e) {
+                        if (e.key === 'Tab') {
+                            if (e.shiftKey) {
+                                if (document.activeElement === firstElement) {
+                                    e.preventDefault();
+                                    lastElement.focus();
+                                }
+                            } else {
+                                if (document.activeElement === lastElement) {
+                                    e.preventDefault();
+                                    firstElement.focus();
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // Password strength indicator
+        function setupPasswordStrength() {
+            const passwordInputs = document.querySelectorAll('input[type="password"]');
+            
+            passwordInputs.forEach(input => {
+                if (input.placeholder.includes('Create')) {
+                    input.addEventListener('input', showPasswordStrength);
+                }
+            });
+        }
+
+        function showPasswordStrength(event) {
+            const password = event.target.value;
+            const strength = calculatePasswordStrength(password);
+            
+            let indicator = event.target.parentNode.querySelector('.password-strength');
+            
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'password-strength';
+                indicator.style.cssText = `
+                    margin-top: 8px;
+                    height: 4px;
+                    background: var(--surface-light);
+                    border-radius: 2px;
+                    overflow: hidden;
+                    transition: all 0.3s ease;
+                `;
+                
+                const bar = document.createElement('div');
+                bar.className = 'strength-bar';
+                bar.style.cssText = `
+                    height: 100%;
+                    transition: all 0.3s ease;
+                    border-radius: 2px;
+                `;
+                
+                const text = document.createElement('div');
+                text.className = 'strength-text';
+                text.style.cssText = `
+                    font-size: 0.8rem;
+                    margin-top: 4px;
+                    transition: color 0.3s ease;
+                `;
+                
+                indicator.appendChild(bar);
+                event.target.parentNode.appendChild(indicator);
+                event.target.parentNode.appendChild(text);
+            }
+            
+            const bar = indicator.querySelector('.strength-bar');
+            const text = event.target.parentNode.querySelector('.strength-text');
+            
+            if (password.length === 0) {
+                indicator.style.opacity = '0';
+                text.style.opacity = '0';
+                return;
+            }
+            
+            indicator.style.opacity = '1';
+            text.style.opacity = '1';
+            
+            const colors = {
+                weak: '#ef4444',
+                fair: '#f59e0b',
+                good: '#10b981',
+                strong: '#059669'
+            };
+            
+            const widths = {
+                weak: '25%',
+                fair: '50%',
+                good: '75%',
+                strong: '100%'
+            };
+            
+            bar.style.width = widths[strength];
+            bar.style.background = colors[strength];
+            text.textContent = `Password strength: ${strength.charAt(0).toUpperCase() + strength.slice(1)}`;
+            text.style.color = colors[strength];
+        }
+
+        function calculatePasswordStrength(password) {
+            let score = 0;
+            
+            if (password.length >= 8) score++;
+            if (/[a-z]/.test(password)) score++;
+            if (/[A-Z]/.test(password)) score++;
+            if (/\d/.test(password)) score++;
+            if (/[^a-zA-Z\d]/.test(password)) score++;
+            
+            if (score < 2) return 'weak';
+            if (score < 3) return 'fair';
+            if (score < 4) return 'good';
+            return 'strong';
+        }
+
+        // Initialize the authentication system
+        document.addEventListener('DOMContentLoaded', function() {
+            new AuthSystem();
+            populateDemoData();
+            setupFormValidation();
+            setupAccessibility();
+            setupPasswordStrength();
+            
+            // Add some helpful demo information
+            console.log('Demo Login Credentials:');
+            console.log('Student: ID = student123, Password = password');
+            console.log('Admin: Email = admin@school.edu, Password = admin123');
+        });
+
+        // Auto-fill demo credentials (for testing purposes)
+        function fillDemoCredentials(type) {
+            if (type === 'student') {
+                document.querySelector('#studentLoginForm input[type="text"]').value = 'student123';
+                document.querySelector('#studentLoginForm input[type="password"]').value = 'password';
+            } else if (type === 'admin') {
+                document.querySelector('#adminLoginForm input[type="email"]').value = 'admin@school.edu';
+                document.querySelector('#adminLoginForm input[type="password"]').value = 'admin123';
+                document.querySelector('#adminLoginForm select').value = 'super';
+            }
+        }
+
+        // Add demo buttons (remove in production)
+        setTimeout(() => {
+            const studentCard = document.querySelector('.student-card');
+            const adminCard = document.querySelector('.admin-card');
+            
+            const studentDemo = document.createElement('button');
+            studentDemo.textContent = '🧪 Fill Demo Data';
+            studentDemo.style.cssText = `
+                margin-top: 10px;
+                padding: 8px 16px;
+                background: var(--surface-light);
+                border: 1px solid var(--surface-medium);
+                border-radius: 8px;
+                color: var(--text-secondary);
+                cursor: pointer;
+                font-size: 0.8rem;
+                width: 100%;
+            `;
+            studentDemo.onclick = () => fillDemoCredentials('student');
+            
+            const adminDemo = studentDemo.cloneNode(true);
+            adminDemo.onclick = () => fillDemoCredentials('admin');
+            
+            studentCard.appendChild(studentDemo);
+            adminCard.appendChild(adminDemo);
+        }, 1000);
+    </script>
+</body>
+</html>

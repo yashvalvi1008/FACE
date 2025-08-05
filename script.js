@@ -159,70 +159,130 @@ class FacialRecognitionAttendance {
         }
     }
 
-    findFaceMatch(descriptor) {
-        const threshold = 0.6;
-        
-        for (const registeredFace of this.registeredFaces) {
-            const distance = faceapi.euclideanDistance(descriptor, registeredFace.descriptor);
-            if (distance < threshold) {
-                return registeredFace;
-            }
-        }
-        return null;
+   findBestFaceMatch(descriptor) {
+  const threshold = 0.45;
+  let bestMatch = null;
+  let bestDistance = threshold;
+  for (const registeredFace of this.registeredFaces) {
+    // Convert descriptors back to Float32Array for distance calculation
+    const storedDescriptor = new Float32Array(registeredFace.descriptor);
+    const distance = faceapi.euclideanDistance(descriptor, storedDescriptor);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestMatch = {
+        ...registeredFace,
+        distance,
+        confidence: 1 - distance
+      };
+    }
+  }
+  return bestMatch;
+}
+
+
+async markAttendance() {
+  try {
+    const detections = await faceapi
+      .detectAllFaces(this.video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+    if (detections.length === 0) {
+      alert('No face detected. Please make sure your face is visible in the camera.');
+      return;
     }
 
-    async registerPerson() {
-        const personName = document.getElementById('personName').value.trim();
-        if (!personName) {
-            alert('Please enter a person\'s name.');
-            return;
-        }
+    const recognizedPeople = [];
+    detections.forEach(detection => {
+      const bestMatch = this.findBestFaceMatch(detection.descriptor);
+      if (bestMatch && !recognizedPeople.find(p => p.name === bestMatch.name)) {
+        recognizedPeople.push(bestMatch);
+      }
+    });
 
-        try {
-            const detections = await faceapi.detectAllFaces(
-                this.video,
-                new faceapi.TinyFaceDetectorOptions()
-            ).withFaceLandmarks().withFaceDescriptors();
-
-            if (detections.length === 0) {
-                alert('No face detected. Please make sure your face is visible in the camera.');
-                return;
-            }
-
-            if (detections.length > 1) {
-                alert('Multiple faces detected. Please make sure only one person is in the frame.');
-                return;
-            }
-
-            const faceDescriptor = detections[0].descriptor;
-            
-            // Check if person already exists
-            const existingPerson = this.registeredFaces.find(face => face.name.toLowerCase() === personName.toLowerCase());
-            if (existingPerson) {
-                alert('A person with this name is already registered.');
-                return;
-            }
-
-            const newFace = {
-                id: Date.now(),
-                name: personName,
-                descriptor: Array.from(faceDescriptor),
-                registeredAt: new Date().toISOString()
-            };
-
-            this.registeredFaces.push(newFace);
-            localStorage.setItem('registeredFaces', JSON.stringify(this.registeredFaces));
-            
-            document.getElementById('personName').value = '';
-            document.getElementById('registerPerson').disabled = true;
-            
-            this.updateRegisteredFacesUI();
-            alert(`${personName} has been registered successfully!`);
-        } catch (error) {
-            console.error('Error registering person:', error);
-            alert('Error registering person. Please try again.');
-        }
+    if (recognizedPeople.length === 0) {
+      alert('No registered faces recognized. Please register first or make sure your face is clearly visible.');
+      return;
     }
+
+    const today = new Date().toDateString();
+    let newAttendances = 0;
+    recognizedPeople.forEach(person => {
+      const existingAttendance = this.todayAttendance.find(
+        att => att.name === person.name && att.date === today
+      );
+      if (!existingAttendance) {
+        this.todayAttendance.push({
+          id: Date.now() + Math.random(),
+          name: person.name,
+          date: today,
+          time: new Date().toLocaleTimeString(),
+          timestamp: new Date().toISOString(),
+          confidence: person.confidence
+        });
+        newAttendances++;
+      }
+    });
+
+    if (newAttendances > 0) {
+      localStorage.setItem('todayAttendance', JSON.stringify(this.todayAttendance));
+      this.updateAttendanceUI();
+      alert(`Attendance marked for ${newAttendances} person(s)!`);
+    } else {
+      alert('Attendance already marked for all recognized faces today.');
+    }
+  } catch (error) {
+    console.error('Error marking attendance:', error);
+    alert('Error marking attendance. Please try again.');
+  }
+}
+
+   async registerPerson() {
+  const personName = document.getElementById('personName').value.trim();
+  if (!personName) {
+    alert("Please enter a person's name.");
+    return;
+  }
+  try {
+    // You may use either: face detection using YOLO/BlazeFace or just FaceAPI
+    const detections = await faceapi.detectAllFaces(
+      this.video,
+      new faceapi.TinyFaceDetectorOptions()
+    ).withFaceLandmarks().withFaceDescriptors();
+    if (detections.length === 0) {
+      alert('No face detected. Please make sure your face is visible in the camera.');
+      return;
+    }
+    if (detections.length > 1) {
+      alert('Multiple faces detected. Please make sure only one person is in the frame.');
+      return;
+    }
+    const faceDescriptor = detections[0].descriptor;
+    const existingPerson = this.registeredFaces.find(
+      face => face.name.toLowerCase() === personName.toLowerCase()
+    );
+    if (existingPerson) {
+      alert('A person with this name is already registered.');
+      return;
+    }
+    const newFace = {
+      id: Date.now(),
+      name: personName,
+      descriptor: Array.from(faceDescriptor), // store as array for JSON
+      registeredAt: new Date().toISOString()
+    };
+    this.registeredFaces.push(newFace);
+    localStorage.setItem('registeredFaces', JSON.stringify(this.registeredFaces));
+    document.getElementById('personName').value = '';
+    document.getElementById('registerPerson').disabled = true;
+    this.updateRegisteredFacesUI();   // or your corresponding UI function
+    alert(`${personName} has been registered successfully!`);
+  } catch (error) {
+    console.error('Error registering person:', error);
+    alert('Error registering person. Please try again.');
+  }
+}
+
+
 
     async markAttendance() {
         try {
