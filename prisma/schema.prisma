@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      String   @default("admin")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Employee {
+  id               Int                @id @default(autoincrement())
+  employeeId       String             @unique @map("employee_id")
+  firstName        String             @map("first_name")
+  lastName         String             @map("last_name")
+  email            String             @unique
+  phone            String?
+  department       String?
+  position         String?
+  hireDate         DateTime?          @map("hire_date")
+  isActive         Boolean            @default(true) @map("is_active")
+  faceDescriptor   String?            @map("face_descriptor")
+  profileImageUrl  String?            @map("profile_image_url")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  
+  attendanceRecords AttendanceRecord[]
+  managedDepartments Department[]
+  workSchedules     WorkSchedule[]
+
+  @@map("employees")
+}
+
+model AttendanceRecord {
+  id              Int       @id @default(autoincrement())
+  employeeId      Int       @map("employee_id")
+  checkInTime     DateTime? @map("check_in_time")
+  checkOutTime    DateTime? @map("check_out_time")
+  date            DateTime
+  status          String    @default("present")
+  confidenceScore Float?    @map("confidence_score")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@map("attendance_records")
+}
+
+model Department {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  managerId   Int?      @map("manager_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  manager Employee? @relation(fields: [managerId], references: [id])
+
+  @@map("departments")
+}
+
+model WorkSchedule {
+  id           Int     @id @default(autoincrement())
+  employeeId   Int     @map("employee_id")
+  dayOfWeek    Int     @map("day_of_week")
+  startTime    String  @map("start_time")
+  endTime      String  @map("end_time")
+  isWorkingDay Boolean @default(true) @map("is_working_day")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@map("work_schedules")
+}
