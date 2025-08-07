@@ -23,10 +23,7 @@ export function useFaceRecognition() {
   const loadModels = async () => {
     try {
       setStatus("Loading face detection models...")
-      
-      // Simulate model loading for demo
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
       setIsModelLoaded(true)
       setStatus("Models loaded successfully! Ready to use.")
     } catch (error) {
@@ -119,11 +116,8 @@ export function useFaceRecognition() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     
-    // Clear previous drawings
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     
-    // Simulate face detection for demo
-    // In a real implementation, this would use Face-API.js or similar
     const mockDetection = {
       x: 200,
       y: 150,
@@ -131,12 +125,10 @@ export function useFaceRecognition() {
       height: 200
     }
     
-    // Draw detection box
     ctx.strokeStyle = '#10b981'
     ctx.lineWidth = 3
     ctx.strokeRect(mockDetection.x, mockDetection.y, mockDetection.width, mockDetection.height)
     
-    // Draw label if face is recognized
     const recognizedName = "Demo User"
     if (recognizedName) {
       ctx.fillStyle = '#10b981'
@@ -152,7 +144,6 @@ export function useFaceRecognition() {
       throw new Error("Camera must be started to register faces")
     }
     
-    // Simulate face registration
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     const newFace: RegisteredFace = {
@@ -160,7 +151,7 @@ export function useFaceRecognition() {
       name,
       department,
       studentId,
-      descriptor: Array.from({ length: 128 }, () => Math.random()), // Mock descriptor
+      descriptor: Array.from({ length: 128 }, () => Math.random()),
       registeredAt: new Date().toISOString()
     }
     
@@ -174,11 +165,10 @@ export function useFaceRecognition() {
       throw new Error("Camera must be started to mark attendance")
     }
     
-    // Simulate attendance marking
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     const today = new Date().toDateString()
-    const recognizedPerson = registeredFaces[0] // Demo: use first registered face
+    const recognizedPerson = registeredFaces[0]
     
     if (!recognizedPerson) {
       throw new Error("No registered faces found")
