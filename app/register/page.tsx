@@ -7,21 +7,24 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, ArrowLeft, LogIn, Mail, Lock } from "lucide-react"
+import { Eye, EyeOff, ArrowLeft, UserPlus, Mail, Lock, User, Building } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
-import { useRouter } from "next/navigation"
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
     email: "",
+    institution: "",
     password: "",
+    confirmPassword: "",
   })
   const { toast } = useToast()
-  const router = useRouter()
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -38,13 +41,21 @@ export default function LoginPage() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 2000))
 
-    toast({
-      title: "Welcome Back!",
-      description: "Successfully logged in to your FaceTrack account.",
-    })
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "Passwords do not match. Please try again.",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
 
+    toast({
+      title: "Registration Successful!",
+      description: "Welcome to FaceTrack. You can now log in to your account.",
+    })
     setIsLoading(false)
-    router.push("/dashboard")
   }
 
   return (
@@ -86,16 +97,51 @@ export default function LoginPage() {
         <Card className="bg-card/80 backdrop-blur-sm border-primary/20 shadow-2xl animate-in slide-in-from-bottom-10 duration-700">
           <CardHeader className="text-center space-y-4">
             <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center mx-auto animate-pulse-slow">
-              <LogIn className="w-8 h-8 text-white" />
+              <UserPlus className="w-8 h-8 text-white" />
             </div>
             <CardTitle className="text-3xl font-serif font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Welcome Back
+              Join FaceTrack
             </CardTitle>
-            <CardDescription className="text-lg">Sign in to your FaceTrack account to continue</CardDescription>
+            <CardDescription className="text-lg">
+              Create your professor account and start tracking attendance effortlessly
+            </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName" className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    First Name
+                  </Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="John"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    className="bg-input/50 border-primary/20 focus:border-primary transition-all duration-300 hover:shadow-md"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName" className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Last Name
+                  </Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Doe"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    className="bg-input/50 border-primary/20 focus:border-primary transition-all duration-300 hover:shadow-md"
+                    required
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
@@ -113,6 +159,22 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="institution" className="flex items-center gap-2">
+                  <Building className="w-4 h-4" />
+                  Institution
+                </Label>
+                <Input
+                  id="institution"
+                  type="text"
+                  placeholder="University Name"
+                  value={formData.institution}
+                  onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
+                  className="bg-input/50 border-primary/20 focus:border-primary transition-all duration-300 hover:shadow-md"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="password" className="flex items-center gap-2">
                   <Lock className="w-4 h-4" />
                   Password
@@ -121,7 +183,7 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder="Create a strong password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="bg-input/50 border-primary/20 focus:border-primary transition-all duration-300 hover:shadow-md pr-10"
@@ -139,10 +201,31 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <Link href="/forgot-password" className="text-sm text-primary hover:text-secondary transition-colors">
-                  Forgot password?
-                </Link>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="flex items-center gap-2">
+                  <Lock className="w-4 h-4" />
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="bg-input/50 border-primary/20 focus:border-primary transition-all duration-300 hover:shadow-md pr-10"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
               </div>
 
               <Button
@@ -153,19 +236,19 @@ export default function LoginPage() {
                 {isLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Signing In...
+                    Creating Account...
                   </div>
                 ) : (
-                  "Sign In"
+                  "Create Account"
                 )}
               </Button>
             </form>
 
             <div className="text-center">
               <p className="text-muted-foreground">
-                Don't have an account?{" "}
-                <Link href="/register" className="text-primary hover:text-secondary transition-colors font-medium">
-                  Create one here
+                Already have an account?{" "}
+                <Link href="/login" className="text-primary hover:text-secondary transition-colors font-medium">
+                  Sign in here
                 </Link>
               </p>
             </div>
